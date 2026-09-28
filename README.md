@@ -1,5 +1,7 @@
 # SlimWaste
 
+Prelaunch status: the interface is deployed, but Supabase provisioning and live account/scan verification are pending. See [launch status](docs/launch-status.md) before using this with real users.
+
 SlimWaste helps students look at food they're throwing away, correct a rough image estimate, and find a practical next step. It supports shared kitchens, irregular shopping, meal plans, limited cooking access, and small budgets.
 
 A single photo cannot measure exact mass. All quantities stay as ranges. Confidence describes the detection, never the person. The corrected record leads the advice. The original model result stays separate for evaluation.
