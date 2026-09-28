@@ -1,0 +1,9 @@
+node_modules
+.next
+.vercel
+output
+test-results
+playwright-report
+package-lock.json
+.env*
+next-env.d.ts

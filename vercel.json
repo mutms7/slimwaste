@@ -1,0 +1,8 @@
+{
+  "crons": [{ "path": "/api/cron/retention", "schedule": "0 4 * * *" }],
+  "functions": {
+    "src/app/api/scans/route.ts": { "maxDuration": 60 },
+    "src/app/api/scans/[id]/coach/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/retention/route.ts": { "maxDuration": 60 }
+  }
+}
