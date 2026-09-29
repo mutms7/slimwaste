@@ -40,13 +40,11 @@ export async function PUT(request: Request) {
         "Please check the profile fields.",
       );
     const { client, user } = await requireUser();
-    const { error } = await client
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        ...parsed.data,
-        updated_at: new Date().toISOString(),
-      });
+    const { error } = await client.from("profiles").upsert({
+      id: user.id,
+      ...parsed.data,
+      updated_at: new Date().toISOString(),
+    });
     if (error) dbError(error, "save_profile");
     return json({ profile: parsed.data });
   });

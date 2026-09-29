@@ -55,7 +55,7 @@ export default function InsightsPage() {
           <ChartNoAxesColumnIncreasing size={38} />
           <h2>Your patterns are private.</h2>
           <p>Sign in to see what repeats in your own scans.</p>
-          <Link className="button button-orange" href="/sign-in">
+          <Link className="button button-lemon" href="/sign-in">
             Sign in <ArrowRight size={18} />
           </Link>
         </div>
@@ -66,7 +66,7 @@ export default function InsightsPage() {
           <p>
             Review a scan first. Patterns get more useful after a few entries.
           </p>
-          <Link className="button button-orange" href="/scan">
+          <Link className="button button-lemon" href="/scan">
             Start a scan <ArrowRight size={18} />
           </Link>
         </div>

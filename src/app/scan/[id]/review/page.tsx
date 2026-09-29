@@ -455,7 +455,7 @@ export default function ReviewPage() {
         </span>
         <button
           type="button"
-          className="button button-orange button-large"
+          className="button button-lemon button-large"
           disabled={busy}
           onClick={save}
         >

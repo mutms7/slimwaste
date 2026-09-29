@@ -13,6 +13,7 @@ import {
 import { api, getScan } from "@/lib/client";
 import { sampleAdvice, sampleItems, sampleStoreKey } from "@/lib/sample";
 import { Notice } from "@/components/shell";
+import { AiConsent } from "@/components/ai-consent";
 import type { CoachReply, Message, ScanItem } from "@/lib/schema";
 
 export default function CoachPage() {
@@ -163,6 +164,7 @@ export default function CoachPage() {
           <span>Advice can take a moment.</span>
         </div>
       )}
+      {!isSample && <AiConsent />}
       {error && (
         <Notice tone="error">
           {error}{" "}
@@ -256,7 +258,7 @@ export default function CoachPage() {
                 />
                 <button
                   type="submit"
-                  className="button button-orange"
+                  className="button button-lemon"
                   disabled={busy || !question.trim()}
                   aria-label="Send question"
                 >

@@ -99,7 +99,7 @@ export default function SettingsPage() {
           <ShieldCheck size={38} />
           <h2>Settings are private to your account.</h2>
           <p>Sign in to save context for your advice.</p>
-          <Link className="button button-orange" href="/sign-in">
+          <Link className="button button-lemon" href="/sign-in">
             Sign in <ArrowRight size={18} />
           </Link>
         </div>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
               </Notice>
             )}
             <button
-              className="button button-orange button-large"
+              className="button button-lemon button-large"
               disabled={busy}
               type="submit"
             >
@@ -192,13 +192,20 @@ export default function SettingsPage() {
           </form>
           <section className="privacy-section">
             <div className="eyebrow">YOUR DATA</div>
-            <h2>Private by default.</h2>
+            <h2>Your records and AI processing.</h2>
             <p>
               Your scanned photos are stored privately for your account, and a
               configured AI provider processes a reduced copy to identify food
               and give advice. You can delete an individual scan and its photo
               from History. The app keeps corrected records so your advice uses
               what you confirmed.
+            </p>
+            <p>
+              On Gemini’s free tier, Google may use submitted content to improve
+              its models and human reviewers may see it. The scan screen asks
+              for your agreement before processing. Don’t include private or
+              sensitive information in photos, notes, kitchen settings, or
+              questions.
             </p>
             <p>
               One photo can’t measure exact mass. Quantity ranges and detection

@@ -1,6 +1,6 @@
 # SlimWaste
 
-Prelaunch status: the interface is deployed, but Supabase provisioning and live account/scan verification are pending. See [launch status](docs/launch-status.md) before using this with real users.
+Early-access status: Supabase and free-tier Gemini are connected and the live synthetic workflow passes. Public email delivery and the owner's email-link sign-in still need verification. See [launch status](docs/launch-status.md) before using this with real users.
 
 SlimWaste helps students look at food they're throwing away, correct a rough image estimate, and find a practical next step. It supports shared kitchens, irregular shopping, meal plans, limited cooking access, and small budgets.
 
@@ -16,42 +16,44 @@ Run `npm test`, `npm run lint`, `npm run build`, and `npm run test:e2e`. Install
 
 Create a Supabase project, then apply `supabase/migrations/202609280001_initial.sql` through Supabase migrations (`supabase link --project-ref YOUR_REF`, then `supabase db push`) or the SQL editor. The migration creates all tables, policies, functions, and the private `scan-images` bucket. Never make the bucket public.
 
-Enable email authentication. Set the Supabase site URL to your deployed app URL. In Authentication > Email Templates > Magic Link, use an email code template that includes `{{ .Token }}`. The app asks users to enter this code, and verifies it with `verifyOtp` using type `email`. Configure production SMTP and appropriate email limits before opening registration broadly. Test both a new account and an existing account with real email delivery.
+Email sign-in uses Supabase's built-in magic links. The server requests a PKCE link with an `/auth/callback` redirect; the callback exchanges its code for session cookies. Open the link in the same browser that requested it. The deployed site and local callback URLs are configured in `supabase/config.toml`. The optional email-code path still works if a custom SMTP provider and the template in `supabase/templates/sign-in.html` are configured later.
+
+Supabase's built-in free mail service is restricted to project-team addresses and a small hourly quota. Public registration needs a custom SMTP provider. On this project, changing email templates without custom SMTP was rejected by Supabase. No paid plan was enabled.
 
 The server validates the signed-in user through Supabase. All private tables have row-level security. Browser credentials cannot write model output, coaching messages, correction snapshots, rate counters, or scan lifecycle fields directly. Corrections pass through a transaction that checks ownership, replaces reviewed items, stores a revision, and invalidates old advice. Server routes check ownership before using the service role.
 
 ## Environment
 
-| Variable                        | Purpose                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Project URL                                                                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public project key, protected by RLS                                           |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Server-only database and private-storage access                                |
-| `AI_PROVIDER`                   | `gemini` or `openai`, exactly one active provider                              |
-| `GEMINI_API_KEY`                | Server-only Gemini key when selected                                           |
-| `GEMINI_MODEL`                  | Defaults to `gemini-3.8-flash`                                                 |
-| `OPENAI_API_KEY`                | Server-only OpenAI key when selected                                           |
-| `OPENAI_MODEL`                  | Defaults to `gpt-4.1-mini`                                                     |
-| `AI_DATA_USE_ACK`               | Set to `no-training` only after checking the provider account's data-use terms |
-| `SCAN_IMAGE_RETENTION_DAYS`     | Derivative retention, defaults to 30 days                                      |
-| `RATE_LIMIT_SECRET`             | At least 32 random characters for IP/account HMAC hashes                       |
-| `CRON_SECRET`                   | Random secret used to authenticate retention cleanup                           |
-| `NEXT_PUBLIC_APP_URL`           | Exact browser origin, including protocol, for mutation origin checks           |
+| Variable                        | Purpose                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Project URL                                                                                                            |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public project key, protected by RLS                                                                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server-only database and private-storage access                                                                        |
+| `AI_PROVIDER`                   | `gemini` or `openai`, exactly one active provider                                                                      |
+| `GEMINI_API_KEY`                | Server-only Gemini key when selected                                                                                   |
+| `GEMINI_MODEL`                  | Defaults to `gemini-3.5-flash-lite`                                                                                    |
+| `OPENAI_API_KEY`                | Server-only OpenAI key when selected                                                                                   |
+| `OPENAI_MODEL`                  | Defaults to `gpt-4.1-mini`                                                                                             |
+| `AI_DATA_USE_ACK`               | `gemini-free-tier` for free Gemini with explicit user agreement, or `no-training` only for a verified eligible account |
+| `SCAN_IMAGE_RETENTION_DAYS`     | Derivative retention, defaults to 30 days                                                                              |
+| `RATE_LIMIT_SECRET`             | At least 32 random characters for IP/account HMAC hashes                                                               |
+| `CRON_SECRET`                   | Random secret used to authenticate retention cleanup                                                                   |
+| `NEXT_PUBLIC_APP_URL`           | Exact browser origin, including protocol, for mutation origin checks                                                   |
 
 Generate independent random values for the rate limit and cron secrets. Don't commit `.env.local` or copy provider secrets into any `NEXT_PUBLIC_` variable. The repository excludes all real environment files and local deployment configuration.
 
 ## AI providers and privacy
 
-| Provider | Adapter                                                                                        | Data-use choice                                                                                                                                                                                |
-| -------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gemini   | Image input and strict JSON output through `generateContent`; current Flash model configurable | Gemini offers limited free usage, but Google lists free-tier inputs as used to improve products. Use a paid-tier project whose terms exclude this use for private scans and corrected records. |
-| OpenAI   | Responses API, image input, strict JSON schema, `store:false`                                  | API data isn't used for training by default under the provider's published policy. Standard abuse-monitoring retention may still apply.                                                        |
+| Provider | Adapter                                                                                        | Data-use choice                                                                                                                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini   | Image input and strict JSON output through `generateContent`; current Flash model configurable | Free-tier submissions can be used to improve Google products and reviewed by humans. The app requires explicit agreement before scans or coaching. Paid-tier terms exclude product-improvement use. |
+| OpenAI   | Responses API, image input, strict JSON schema, `store:false`                                  | API data isn't used for training by default under the provider's published policy. Standard abuse-monitoring retention may still apply.                                                             |
 
-The operator acknowledgement is a deployment gate, not a way to change Google's terms or a guarantee about an API key. Don't set it for a free-tier project whose terms permit training. Review provider terms for your region and account. There is no automatic fallback between vendors. Separate instructions govern detection and coaching. User notes, names, household context and conversation content are bounded, sanitized, randomly fenced, and sent separately from trusted model instructions. Output must validate before it's stored or shown. These controls reduce prompt injection risk; they don't make a model infallible.
+The operator setting must match the account. `gemini-free-tier` enables the free-tier disclosure and a server-enforced, versioned agreement for every scan and coaching request. Agreement lasts for the browser tab and resets on sign-out or a change of account. Don't set `no-training` for a free-tier project. Neither setting changes Google's terms. Don't submit private or sensitive data to the free tier. Review provider terms for your region and account. There is no automatic fallback between vendors. Separate instructions govern detection and coaching. User notes, names, household context and conversation content are bounded, sanitized, randomly fenced, and sent separately from trusted model instructions. Output must validate before it's stored or shown. These controls reduce prompt injection risk; they don't make a model infallible.
 
 The coach doesn't provide medical nutrition advice, diagnose eating behaviour, or recommend eating visibly unsafe food. Best-before quality and safety are different questions. Advice is brief, practical, and based on corrected scans.
 
-Photos and relevant corrected records are sent to the selected AI provider for inference. SlimWaste does not upload corrections for training. Evaluation consent is off by default. It records permission for a future reviewed, de-identified evaluation process; it does not trigger an export or training job. See [the evaluation plan](docs/evaluation.md).
+Photos and relevant corrected records are sent to the selected AI provider for inference. SlimWaste has no separate training upload, but Google may use free-tier inference inputs and outputs for product improvement. Evaluation consent is off by default. It records permission for a future reviewed, de-identified evaluation process; it does not trigger an export or training job. See [the evaluation plan](docs/evaluation.md).
 
 Official references, checked September 28, 2026: [Gemini models](https://ai.google.dev/gemini-api/docs/models), [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output), [Gemini pricing and data use](https://ai.google.dev/gemini-api/docs/pricing), [OpenAI vision](https://developers.openai.com/api/docs/guides/images-vision), [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
 
@@ -92,3 +94,9 @@ Use an exact `NEXT_PUBLIC_APP_URL` for each environment. Before assigning `slimw
 ## Product facts
 
 Facts are kept separate from personal estimates. [UNEP's 2024 release](https://www.unep.org/news-and-stories/press-release/world-squanders-over-1-billion-meals-day-un-report) reports 1.05 billion tonnes of food waste in 2022, with households responsible for 60 percent. [Environment and Climate Change Canada's Taking Stock page](https://www.canada.ca/en/environment-climate-change/services/managing-reducing-waste/food-loss-waste/taking-stock.html) describes avoidable loss and waste in Canada and common household causes. These population figures aren't used to calculate a student's emissions or savings.
+
+## Visual identity
+
+The interface uses lemon yellow, blue-green, jade, seagreen, nile green, and parrot green from the supplied palette. The custom S mark echoes two curved plate rims. Bricolage Grotesque is used for headings and the wordmark, with DM Sans for body text. Fonts are self-hosted with their SIL Open Font Licenses in `src/app/fonts`. The plate artwork and favicon are original SVG assets.
+
+Run the optional connected check against a running app with `RUN_CONNECTED_SMOKE=1 node scripts/smoke-connected.mjs` (set `SMOKE_BASE_URL` to test a deployment). It uses real Supabase and Gemini, creates two temporary accounts and synthetic scan data, verifies isolation and cleanup, and deletes those test accounts in a finally block. It never sends email.

@@ -4,6 +4,7 @@ import {
   coach,
   coachingContext,
   providerConfig,
+  requireAiConsent,
 } from "../src/lib/server/ai";
 const food = {
   id: "provider-1",
@@ -51,6 +52,52 @@ describe("provider adapters and prompt boundaries", () => {
     vi.stubEnv("AI_DATA_USE_ACK", "");
     expect(() => providerConfig()).toThrow("not been enabled");
   });
+  it("requires a current explicit agreement for free-tier photo and coaching requests", () => {
+    vi.stubEnv("AI_DATA_USE_ACK", "gemini-free-tier");
+    expect(() => providerConfig()).not.toThrow();
+    expect(() =>
+      requireAiConsent(
+        new Request("https://example.test/api/scans"),
+        "test-user",
+      ),
+    ).toThrow("agreement");
+    expect(() =>
+      requireAiConsent(
+        new Request("https://example.test/api/scans", {
+          headers: { "x-ai-consent": "old-consent" },
+        }),
+        "test-user",
+      ),
+    ).toThrow("agreement");
+    expect(() =>
+      requireAiConsent(
+        new Request("https://example.test/api/scans", {
+          headers: {
+            "x-ai-consent": "gemini-free-tier-v1",
+            "x-ai-consent-user": "test-user",
+          },
+        }),
+        "test-user",
+      ),
+    ).not.toThrow();
+    expect(() =>
+      requireAiConsent(
+        new Request("https://example.test/api/scans", {
+          headers: {
+            "x-ai-consent": "gemini-free-tier-v1",
+            "x-ai-consent-user": "another-user",
+          },
+        }),
+        "test-user",
+      ),
+    ).toThrow("agreement");
+  });
+  it("doesn't accept Gemini's free-tier acknowledgement for another provider", () => {
+    vi.stubEnv("AI_PROVIDER", "openai");
+    vi.stubEnv("OPENAI_API_KEY", "test-key-not-real");
+    vi.stubEnv("AI_DATA_USE_ACK", "gemini-free-tier");
+    expect(() => providerConfig()).toThrow("not been enabled");
+  });
   it("fences data with a fresh random boundary and strips angle delimiters", () => {
     const a = coachingContext(context),
       b = coachingContext(context);
@@ -61,26 +108,24 @@ describe("provider adapters and prompt boundaries", () => {
     expect(a).toContain("Shared kitchen");
   });
   it("retains original detection while removing personal reasons guessed by a photo", async () => {
-    const mocked = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    text: JSON.stringify({
-                      items: [food],
-                      reference_question: "How wide is the plate?",
-                    }),
-                  },
-                ],
-              },
+    const mocked = vi.fn().mockResolvedValue(
+      Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    items: [food],
+                    reference_question: "How wide is the plate?",
+                  }),
+                },
+              ],
             },
-          ],
-        }),
-      );
+          },
+        ],
+      }),
+    );
     vi.stubGlobal("fetch", mocked);
     const result = await detect(Buffer.from("test image"));
     expect(result.original.items[0].reason).toBe("spoiled");
@@ -94,19 +139,17 @@ describe("provider adapters and prompt boundaries", () => {
   it("rejects schema-invalid responses rather than supplying sample data", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          Response.json({
-            candidates: [
-              {
-                content: {
-                  parts: [{ text: '{"items":[],"reference_question":4}' }],
-                },
+      vi.fn().mockResolvedValue(
+        Response.json({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: '{"items":[],"reference_question":4}' }],
               },
-            ],
-          }),
-        ),
+            },
+          ],
+        }),
+      ),
     );
     await expect(detect(Buffer.from("image"))).rejects.toMatchObject({
       code: "provider_invalid",
@@ -122,34 +165,60 @@ describe("provider adapters and prompt boundaries", () => {
       status: 429,
     });
   });
-  it("uses Responses API with separate trusted instructions and storage disabled", async () => {
-    vi.stubEnv("AI_PROVIDER", "openai");
-    vi.stubEnv("OPENAI_API_KEY", "test-only");
+  it("retries temporary unavailability once without changing the model or request", async () => {
     const mocked = vi
       .fn()
-      .mockResolvedValue(
+      .mockResolvedValueOnce(new Response("busy", { status: 503 }))
+      .mockResolvedValueOnce(
         Response.json({
-          output: [
+          candidates: [
             {
-              type: "message",
-              content: [
-                {
-                  type: "output_text",
-                  text: JSON.stringify({
-                    breakdown: "Try a smaller bag.",
-                    actions: [
-                      {
-                        title: "Buy less",
-                        detail: "A smaller bag fits one meal.",
-                      },
-                    ],
-                  }),
-                },
-              ],
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      items: [food],
+                      reference_question: "",
+                    }),
+                  },
+                ],
+              },
             },
           ],
         }),
       );
+    vi.stubGlobal("fetch", mocked);
+    const result = await detect(Buffer.from("synthetic image"));
+    expect(result.detection.items[0].name).toBe("Spinach");
+    expect(mocked).toHaveBeenCalledTimes(2);
+    expect(mocked.mock.calls[1]).toEqual(mocked.mock.calls[0]);
+  });
+  it("uses Responses API with separate trusted instructions and storage disabled", async () => {
+    vi.stubEnv("AI_PROVIDER", "openai");
+    vi.stubEnv("OPENAI_API_KEY", "test-only");
+    const mocked = vi.fn().mockResolvedValue(
+      Response.json({
+        output: [
+          {
+            type: "message",
+            content: [
+              {
+                type: "output_text",
+                text: JSON.stringify({
+                  breakdown: "Try a smaller bag.",
+                  actions: [
+                    {
+                      title: "Buy less",
+                      detail: "A smaller bag fits one meal.",
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        ],
+      }),
+    );
     vi.stubGlobal("fetch", mocked);
     await coach(context);
     const [url, options] = mocked.mock.calls[0];

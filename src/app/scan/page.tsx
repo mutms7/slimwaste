@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  Camera,
-  ImagePlus,
-  LockKeyhole,
-  ScanLine,
-} from "lucide-react";
+import { ArrowRight, Camera, ImagePlus, LockKeyhole } from "lucide-react";
 import { api, session } from "@/lib/client";
 import { Notice } from "@/components/shell";
+import { PlateIllustration } from "@/components/brand";
+import { AiConsent } from "@/components/ai-consent";
 
 const accepted = ["image/jpeg", "image/png", "image/webp"];
 export default function ScanPage() {
@@ -64,45 +60,64 @@ export default function ScanPage() {
   return (
     <div className="scan-page content-width">
       <div className="scan-copy">
-        <div className="eyebrow">YOUR NEXT SCAN</div>
+        <div className="eyebrow">
+          <span className="eyebrow-seed" /> SMALL HABITS. LESS WASTE.
+        </div>
         <h1>
-          See what’s left.
+          A little less
           <br />
-          <em>Find what helps.</em>
+          <em>left behind.</em>
         </h1>
         <p>
-          Take a photo of food you’re about to throw away. We’ll make a rough
-          list, you’ll fix it, then we’ll find one useful next move.
+          Start with what’s on your plate. Snap the food you’re throwing away,
+          check the estimate, and find one small thing to try next time.
         </p>
       </div>
       <div className="camera-panel">
         <div className="camera-art" aria-hidden="true">
-          <div className="camera-frame">
-            <ScanLine size={76} strokeWidth={1} />
-            <span>FOOD IN FRAME</span>
+          <div className="art-heading">
+            <span>A FRESH LOOK AT LEFTOVERS</span>
+            <span>↗</span>
           </div>
-          <div className="art-orbit art-orbit-one" />
-          <div className="art-orbit art-orbit-two" />
+          <PlateIllustration />
+          <span className="plate-sticker">
+            Small steps.
+            <br />
+            Good change.
+          </span>
+          <span className="illustration-label">ILLUSTRATION</span>
+          <div className="scan-steps">
+            <span>
+              <b>01</b> Snap
+            </span>
+            <span>
+              <b>02</b> Check
+            </span>
+            <span>
+              <b>03</b> Try
+            </span>
+          </div>
         </div>
         <div className="camera-actions">
           {checking ? (
             <p className="muted">Checking your account…</p>
           ) : !user ? (
             <div className="account-callout">
-              <LockKeyhole size={20} aria-hidden="true" />
+              <LockKeyhole size={18} aria-hidden="true" />
               <div>
                 <strong>Start with a private account</strong>
                 <span>Your photos and history stay tied to you.</span>
               </div>
-              <Link href="/sign-in" className="button button-orange">
+              <Link href="/sign-in" className="button button-lemon">
                 Sign in <ArrowRight size={18} />
               </Link>
             </div>
           ) : (
             <>
               <p className="signed-in-as">Signed in as {user.email}</p>
+              <AiConsent />
               <button
-                className="button button-orange button-large"
+                className="button button-lemon button-large"
                 type="button"
                 onClick={() => cameraRef.current?.click()}
                 disabled={busy}

@@ -1,4 +1,5 @@
 import type { CoachReply, Message, Profile, Scan } from "./schema";
+import { consentStorageKey, freeTierConsent } from "./ai-policy";
 
 export class ApiError extends Error {
   constructor(
@@ -15,10 +16,20 @@ export async function api<T>(
 ): Promise<T> {
   let response: Response;
   try {
+    if (path === "/api/auth" && options.method === "DELETE")
+      sessionStorage.removeItem(consentStorageKey);
     response = await fetch(path, {
       ...options,
       signal: options.signal || AbortSignal.timeout(60000),
       headers: {
+        ...(typeof window !== "undefined" &&
+        sessionStorage.getItem(consentStorageKey) === freeTierConsent
+          ? {
+              "x-ai-consent": freeTierConsent,
+              "x-ai-consent-user":
+                sessionStorage.getItem(`${consentStorageKey}.user`) || "",
+            }
+          : {}),
         ...(options.body instanceof FormData
           ? {}
           : { "Content-Type": "application/json" }),
@@ -49,10 +60,20 @@ export async function api<T>(
   return data as T;
 }
 
-export const session = () =>
-  api<{ user: { id: string; email: string } | null; configured: boolean }>(
-    "/api/session",
-  );
+export const session = async () => {
+  const data = await api<{
+    user: { id: string; email: string } | null;
+    configured: boolean;
+    aiDataUse?: string;
+  }>("/api/session");
+  const identityKey = `${consentStorageKey}.user`;
+  const identity = data.user?.id || "";
+  if (sessionStorage.getItem(identityKey) !== identity) {
+    sessionStorage.removeItem(consentStorageKey);
+    sessionStorage.setItem(identityKey, identity);
+  }
+  return data;
+};
 export const getScans = () => api<{ scans: Scan[] }>("/api/scans");
 export const getScan = (id: string) =>
   api<{ scan: Scan; messages: Message[]; advice: CoachReply | null }>(

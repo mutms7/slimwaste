@@ -61,7 +61,7 @@ export default function HistoryPage() {
           <Camera size={38} />
           <h2>History starts after sign-in.</h2>
           <p>Sign in to keep your scans private and see patterns over time.</p>
-          <Link className="button button-orange" href="/sign-in">
+          <Link className="button button-lemon" href="/sign-in">
             Sign in <ArrowRight size={18} />
           </Link>
         </div>
@@ -73,7 +73,7 @@ export default function HistoryPage() {
             Next time food’s going into the bin, take a photo and check the
             list.
           </p>
-          <Link className="button button-orange" href="/scan">
+          <Link className="button button-lemon" href="/scan">
             Start a scan <ArrowRight size={18} />
           </Link>
         </div>

@@ -1,12 +1,27 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parseEnv } from "node:util";
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import sharp from "sharp";
 import { detect, coach } from "../src/lib/server/ai";
+
+afterEach(() => vi.restoreAllMocks());
 
 it.skipIf(process.env.RUN_LIVE_SMOKE !== "1")(
   "checks configured AI with synthetic, non-private sample content",
   async () => {
+    if (process.env.RUN_LIVE_DIAGNOSTICS === "1") {
+      const actualFetch = globalThis.fetch;
+      vi.spyOn(globalThis, "fetch").mockImplementation(async (...args) => {
+        const response = await actualFetch(...args);
+        // Only this synthetic fixture is used here. Never log request headers.
+        mkdirSync("output", { recursive: true });
+        writeFileSync(
+          "output/provider-smoke.json",
+          JSON.stringify(await response.clone().json(), null, 2),
+        );
+        return response;
+      });
+    }
     const env = parseEnv(readFileSync(".env.local", "utf8"));
     for (const key of [
       "AI_PROVIDER",

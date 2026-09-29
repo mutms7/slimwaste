@@ -8,7 +8,7 @@ import {
 import { adminClient, dbError, requireUser } from "@/lib/server/supabase";
 import { limit } from "@/lib/server/rate-limit";
 import { normalizeImage } from "@/lib/server/image";
-import { detect, providerConfig } from "@/lib/server/ai";
+import { detect, providerConfig, requireAiConsent } from "@/lib/server/ai";
 import { listScans } from "@/lib/server/scans";
 
 export async function GET() {
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     requireSameOrigin(request);
     const { user } = await requireUser();
     providerConfig();
+    requireAiConsent(request, user.id);
     await limit(request, user.id, "scan");
     const length = Number(request.headers.get("content-length"));
     if (length > 4_400_000)
@@ -63,37 +64,31 @@ export async function POST(request: Request) {
           "Photo retention is not configured yet.",
         );
       const expires = new Date(Date.now() + days * 86400000).toISOString();
-      const { error: scanError } = await admin
-        .from("scans")
-        .insert({
-          id,
-          user_id: user.id,
-          status: "review",
-          reference_question: detection.reference_question,
-          model_version: model,
-        });
+      const { error: scanError } = await admin.from("scans").insert({
+        id,
+        user_id: user.id,
+        status: "review",
+        reference_question: detection.reference_question,
+        model_version: model,
+      });
       if (scanError) dbError(scanError, "create_scan");
       const results = await Promise.all([
-        admin
-          .from("original_detections")
-          .insert({
-            scan_id: id,
-            user_id: user.id,
-            result: original,
-            presented_result: detection,
-            model_version: model,
-          }),
-        admin
-          .from("scan_images")
-          .insert({
-            scan_id: id,
-            user_id: user.id,
-            storage_path: path,
-            width: normalized.width,
-            height: normalized.height,
-            mime_type: "image/jpeg",
-            expires_at: expires,
-          }),
+        admin.from("original_detections").insert({
+          scan_id: id,
+          user_id: user.id,
+          result: original,
+          presented_result: detection,
+          model_version: model,
+        }),
+        admin.from("scan_images").insert({
+          scan_id: id,
+          user_id: user.id,
+          storage_path: path,
+          width: normalized.width,
+          height: normalized.height,
+          mime_type: "image/jpeg",
+          expires_at: expires,
+        }),
       ]);
       for (const result of results)
         if (result.error) dbError(result.error, "create_scan_details");

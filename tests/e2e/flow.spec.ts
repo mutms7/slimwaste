@@ -208,3 +208,70 @@ test("sample is labelled, responsive, keyboard accessible and has no serious acc
     fullPage: true,
   });
 });
+
+test("free-tier processing requires agreement and keeps the camera accessible", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (route) =>
+    route.fulfill({
+      json: {
+        configured: true,
+        user: { id: "test-user", email: "student@example.test" },
+        aiDataUse: "gemini-free-tier",
+      },
+    }),
+  );
+  const agreements: (string | undefined)[] = [];
+  await page.route("**/api/scans", async (route) => {
+    const agreement = route.request().headers()["x-ai-consent"];
+    agreements.push(agreement);
+    await route.fulfill({
+      status: agreement ? 503 : 403,
+      json: {
+        error: agreement
+          ? "The AI service is temporarily unavailable."
+          : "Check the free AI processing agreement before sending a photo or asking for advice.",
+      },
+    });
+  });
+  await page.goto("/scan");
+  const agreement = page.getByRole("checkbox", {
+    name: "I agree to this processing in this tab.",
+  });
+  await expect(agreement).not.toBeChecked();
+  const camera = page.getByRole("button", { name: "Take a photo" });
+  const bounds = await camera.boundingBox();
+  expect(bounds!.y + bounds!.height).toBeLessThan(
+    page.viewportSize()!.height - 70,
+  );
+  const photo = await sharp({
+    create: { width: 10, height: 10, channels: 3, background: "green" },
+  })
+    .jpeg()
+    .toBuffer();
+  await page
+    .getByLabel("Choose a food photo")
+    .setInputFiles({ name: "food.jpg", mimeType: "image/jpeg", buffer: photo });
+  await expect(
+    page.getByText(
+      "Check the free AI processing agreement before sending a photo or asking for advice.",
+    ),
+  ).toBeVisible();
+  expect(agreements[0]).toBeUndefined();
+  await agreement.check();
+  await page
+    .getByLabel("Choose a food photo")
+    .setInputFiles({ name: "food.jpg", mimeType: "image/jpeg", buffer: photo });
+  await expect(
+    page.getByText("The AI service is temporarily unavailable."),
+  ).toBeVisible();
+  expect(agreements[1]).toBe("gemini-free-tier-v1");
+  await page.reload();
+  await expect(agreement).toBeChecked();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter((v) =>
+      ["serious", "critical"].includes(v.impact || ""),
+    ),
+  ).toEqual([]);
+});

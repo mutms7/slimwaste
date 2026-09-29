@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
@@ -15,6 +15,16 @@ export default function SignInPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [enterCode, setEnterCode] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("link_error")) {
+      Promise.resolve().then(() =>
+        setError(
+          "That sign-in link didn't work. Request a new email and open its link in the same browser.",
+        ),
+      );
+    }
+  }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -27,7 +37,9 @@ export default function SignInPage() {
           body: JSON.stringify({ email: email.trim() }),
         });
         setStep("code");
-        setInfo("Check your email for a sign-in code.");
+        setInfo(
+          "Check your email. Open the sign-in link in this same browser to continue.",
+        );
       } else {
         await api("/api/auth/verify", {
           method: "POST",
@@ -51,7 +63,7 @@ export default function SignInPage() {
       </Link>
       <PageIntro eyebrow="YOUR PRIVATE SPACE" title="Sign in to start">
         Your scans and corrections belong to your account. We’ll email you a
-        code, so there’s no password to remember.
+        sign-in link, so there’s no password to remember.
       </PageIntro>
       <form className="form-stack signin-form" onSubmit={submit}>
         <label htmlFor="email">Email address</label>
@@ -67,24 +79,39 @@ export default function SignInPage() {
         />
         {step === "code" && (
           <>
-            <label htmlFor="token">Email code</label>
-            <input
-              id="token"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              required
-              disabled={busy}
-              placeholder="Enter your code"
-            />
+            <button
+              className="plain-button"
+              type="button"
+              onClick={() => setEnterCode(!enterCode)}
+            >
+              {enterCode
+                ? "Use the email link instead"
+                : "My email includes a code"}
+            </button>
+            {enterCode && (
+              <>
+                <label htmlFor="token">Email code</label>
+                <input
+                  id="token"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  required
+                  disabled={busy}
+                  placeholder="Enter your code"
+                />
+              </>
+            )}
             <button
               className="plain-button"
               type="button"
               onClick={() => {
                 setStep("email");
                 setToken("");
+                setInfo("");
+                setEnterCode(false);
               }}
             >
               Use another email
@@ -93,18 +120,20 @@ export default function SignInPage() {
         )}
         {info && <Notice>{info}</Notice>}
         {error && <Notice tone="error">{error}</Notice>}
-        <button
-          className="button button-orange button-large"
-          disabled={busy}
-          type="submit"
-        >
-          {busy
-            ? "Please wait…"
-            : step === "email"
-              ? "Send my code"
-              : "Verify and continue"}{" "}
-          {step === "email" ? <Mail size={19} /> : <ArrowRight size={19} />}
-        </button>
+        {(step === "email" || enterCode) && (
+          <button
+            className="button button-lemon button-large"
+            disabled={busy}
+            type="submit"
+          >
+            {busy
+              ? "Please wait…"
+              : step === "email"
+                ? "Send sign-in email"
+                : "Verify and continue"}{" "}
+            {step === "email" ? <Mail size={19} /> : <ArrowRight size={19} />}
+          </button>
+        )}
       </form>
       <p className="privacy-line">
         We only use your email for your account and sign-in. You can delete a

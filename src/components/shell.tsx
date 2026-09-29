@@ -9,6 +9,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { BrandMark } from "@/components/brand";
 
 const links = [
   { href: "/scan", label: "Scan", Icon: Camera },
@@ -38,11 +39,36 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <header className="site-header">
         <Link href="/scan" className="wordmark" aria-label="SlimWaste home">
           <span className="brand-mark" aria-hidden="true">
-            sw<span>.</span>
+            <BrandMark />
           </span>
-          <span>slimwaste</span>
+          <span>
+            slimwaste<span className="wordmark-dot">.</span>
+          </span>
         </Link>
-        <span className="header-note">Notice more. Waste less.</span>
+        <span className="header-note">
+          Notice more.
+          <br />
+          Waste less.
+        </span>
+        <nav className="bottom-nav" aria-label="Main navigation">
+          {links.map(({ href, label, Icon }) => {
+            const active =
+              href === "/scan"
+                ? pathname === "/" || pathname.startsWith("/scan")
+                : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={active ? "nav-link active" : "nav-link"}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon size={22} strokeWidth={2} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </header>
       {!online && (
         <div role="status" className="offline-banner">
@@ -53,25 +79,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main id="main" className="main-content">
         {children}
       </main>
-      <nav className="bottom-nav" aria-label="Main navigation">
-        {links.map(({ href, label, Icon }) => {
-          const active =
-            href === "/scan"
-              ? pathname === "/" || pathname.startsWith("/scan")
-              : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={active ? "nav-link active" : "nav-link"}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon size={22} strokeWidth={2} aria-hidden="true" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }

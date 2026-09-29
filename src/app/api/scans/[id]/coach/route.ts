@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { correctionSchema, profileSchema, type Profile } from "@/lib/schema";
-import { coach } from "@/lib/server/ai";
+import { coach, requireAiConsent } from "@/lib/server/ai";
 import {
   ApiError,
   json,
@@ -34,6 +34,7 @@ export async function POST(request: Request, context: Context) {
         "Keep the question under 1,000 characters.",
       );
     const { client, user } = await requireUser();
+    requireAiConsent(request, user.id);
     const scan = await loadScan(client, user.id, id);
     if (scan.status !== "corrected")
       throw new ApiError(
