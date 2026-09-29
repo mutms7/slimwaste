@@ -19,17 +19,45 @@ const admin = createClient(
 );
 const accounts = [];
 
-async function account() {
+async function account(throughApp = false) {
   const email = `slimwaste-smoke-${randomUUID()}@example.test`;
   const password = randomBytes(32).toString("hex");
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { purpose: "temporary synthetic integration test" },
-  });
-  assert.equal(error, null, "Create test account");
-  const identity = { id: data.user.id, jar: new Map() };
+  const identity = { id: "", jar: new Map() };
+  if (throughApp) {
+    const response = await fetch(`${base}/api/auth`, {
+      method: "POST",
+      headers: {
+        origin: new URL(base).origin,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password, mode: "sign-up" }),
+    });
+    const result = await response.json();
+    assert.equal(
+      response.status,
+      200,
+      `Create password account: ${result.error}`,
+    );
+    identity.id = result.user.id;
+    for (const value of response.headers.getSetCookie()) {
+      const first = value.split(";", 1)[0];
+      const separator = first.indexOf("=");
+      identity.jar.set(
+        first.slice(0, separator),
+        decodeURIComponent(first.slice(separator + 1)),
+      );
+    }
+    assert.ok(identity.jar.size, "Password account receives session cookies");
+  } else {
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { purpose: "temporary synthetic integration test" },
+    });
+    assert.equal(error, null, "Create test account");
+    identity.id = data.user.id;
+  }
   accounts.push(identity);
   identity.client = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -43,11 +71,13 @@ async function account() {
       },
     },
   );
-  const signed = await identity.client.auth.signInWithPassword({
-    email,
-    password,
-  });
-  assert.equal(signed.error, null, "Sign in test account");
+  if (!throughApp) {
+    const signed = await identity.client.auth.signInWithPassword({
+      email,
+      password,
+    });
+    assert.equal(signed.error, null, "Sign in test account");
+  }
   return identity;
 }
 
@@ -90,6 +120,13 @@ async function request(
 }
 
 try {
+  const passwordAccount = await account(true);
+  assert.equal(
+    (await request(passwordAccount, "/api/session")).user.id,
+    passwordAccount.id,
+  );
+  await request(passwordAccount, "/api/auth", "DELETE");
+  console.log("PASS: hosted password account creation, session, and sign-out");
   const first = await account();
   const second = await account();
   assert.equal((await request(first, "/api/session")).user.id, first.id);
