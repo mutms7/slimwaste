@@ -16,7 +16,7 @@ Run `npm test`, `npm run lint`, `npm run build`, and `npm run test:e2e`. Install
 
 Create a Supabase project, then apply `supabase/migrations/202609280001_initial.sql` through Supabase migrations (`supabase link --project-ref YOUR_REF`, then `supabase db push`) or the SQL editor. The migration creates all tables, policies, functions, and the private `scan-images` bucket. Never make the bucket public.
 
-Accounts use an email and password with a 12-character minimum. Supabase confirmation emails are disabled for this early-access project, so account creation completes without the free mail service. Add a proper password-reset and verification flow when transactional email is configured.
+Accounts use an email and password with a 12-character minimum. Supabase confirmation emails are disabled for this early-access project, so account creation completes without the free mail service. A missing account moves directly into account creation. Password recovery sends a Supabase reset link and returns to `/auth/reset`; public delivery still depends on configuring transactional email outside the built-in project-team allowance.
 
 The server validates the signed-in user through Supabase. All private tables have row-level security. Browser credentials cannot write model output, coaching messages, correction snapshots, rate counters, or scan lifecycle fields directly. Corrections pass through a transaction that checks ownership, replaces reviewed items, stores a revision, and invalidates old advice. Server routes check ownership before using the service role.
 
@@ -95,6 +95,8 @@ Facts are kept separate from personal estimates. [UNEP's 2024 release](https://w
 
 ## Visual identity
 
-The interface uses lemon yellow, blue-green, jade, seagreen, nile green, and parrot green from the supplied palette. The custom S mark echoes two curved plate rims. Bricolage Grotesque is used for headings and the wordmark, with DM Sans for body text. Fonts are self-hosted with their SIL Open Font Licenses in `src/app/fonts`. The plate artwork and favicon are original SVG assets.
+The interface uses lemon yellow, blue-green, jade, seagreen, nile green, and parrot green from the supplied palette. The custom S mark echoes two curved plate rims. Bricolage Grotesque is used for headings and the wordmark, with DM Sans for body text. Fonts are self-hosted with their SIL Open Font Licenses in `src/app/fonts`. The scan hero uses Teo Zac's [leftover dining-table photo on Unsplash](https://unsplash.com/photos/leftover-food-on-dining-table-frKsP6iUSAM), which Unsplash labels free to use under its license. The explicitly labelled sample image and favicon remain original SVG assets.
+
+The implementation brief used for the current visual, recovery, and loading-game work is saved in [docs/implementation-prompt.md](docs/implementation-prompt.md).
 
 Run the optional connected check against a running app with `RUN_CONNECTED_SMOKE=1 node scripts/smoke-connected.mjs` (set `SMOKE_BASE_URL` to test a deployment). It uses real Supabase and Gemini, creates two temporary accounts and synthetic scan data, verifies isolation and cleanup, and deletes those test accounts in a finally block. It never sends email.

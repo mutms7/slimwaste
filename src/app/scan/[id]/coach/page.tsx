@@ -14,6 +14,7 @@ import { api, getScan } from "@/lib/client";
 import { sampleAdvice, sampleItems, sampleStoreKey } from "@/lib/sample";
 import { Notice } from "@/components/shell";
 import { AiConsent } from "@/components/ai-consent";
+import { LoadingSortGame } from "@/components/loading-sort-game";
 import type { CoachReply, Message, ScanItem } from "@/lib/schema";
 
 export default function CoachPage() {
@@ -157,13 +158,7 @@ export default function CoachPage() {
           a signed-in account.
         </Notice>
       )}
-      {loading && (
-        <div className="coach-loading" role="status">
-          <div className="loading-rule" />
-          <p>Reading your corrected list and recent patterns…</p>
-          <span>Advice can take a moment.</span>
-        </div>
-      )}
+      {loading && <LoadingSortGame title="Reading your corrected list…" />}
       {!isSample && <AiConsent />}
       {error && (
         <Notice tone="error">
@@ -177,6 +172,7 @@ export default function CoachPage() {
           </button>
         </Notice>
       )}
+      {busy && <LoadingSortGame title="Building your next suggestion…" />}
       {reply && (
         <>
           <section className="coach-main">

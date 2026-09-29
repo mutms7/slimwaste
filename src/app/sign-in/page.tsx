@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, KeyRound, UserPlus } from "lucide-react";
-import { api } from "@/lib/client";
+import { ApiError, api } from "@/lib/client";
 import { Notice, PageIntro } from "@/components/shell";
 
 type Mode = "sign-in" | "sign-up";
@@ -16,11 +16,13 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
+    setInfo("");
     try {
       await api("/api/auth", {
         method: "POST",
@@ -29,6 +31,12 @@ export default function SignInPage() {
       router.push("/scan");
       router.refresh();
     } catch (caught) {
+      if (caught instanceof ApiError && caught.code === "account_not_found") {
+        setMode("sign-up");
+        setPassword("");
+        setInfo("No account was found for that email. Create one here.");
+        return;
+      }
       setError(
         caught instanceof Error
           ? caught.message
@@ -84,6 +92,7 @@ export default function SignInPage() {
             Use at least 12 characters. A password manager can make one for you.
           </p>
         )}
+        {info && <Notice>{info}</Notice>}
         {error && <Notice tone="error">{error}</Notice>}
         <button
           className="button button-lemon button-large"
@@ -93,6 +102,11 @@ export default function SignInPage() {
           {busy ? "Please wait…" : creating ? "Create account" : "Sign in"}{" "}
           {creating ? <UserPlus size={19} /> : <KeyRound size={19} />}
         </button>
+        {!creating && (
+          <Link className="auth-recovery-link" href="/forgot-password">
+            Forgot your password?
+          </Link>
+        )}
         <button
           className="plain-button auth-mode-toggle"
           type="button"
@@ -100,6 +114,7 @@ export default function SignInPage() {
           onClick={() => {
             setMode(creating ? "sign-in" : "sign-up");
             setError("");
+            setInfo("");
           }}
         >
           {creating

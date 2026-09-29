@@ -2,6 +2,7 @@ project_id = "slimwaste"
 
 [auth]
 site_url = "https://slimwaste.vercel.app"
+additional_redirect_urls = ["https://slimwaste.vercel.app/auth/reset", "http://localhost:3000/auth/reset", "http://127.0.0.1:3000/auth/reset"]
 enable_signup = true
 
 [auth.email]

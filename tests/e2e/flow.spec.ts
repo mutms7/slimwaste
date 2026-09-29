@@ -168,6 +168,87 @@ test("provider failure is visible and never becomes a sample analysis", async ({
   await expect(page).toHaveURL(/\/scan$/);
   await expect(page.getByRole("button", { name: "Open camera" })).toBeEnabled();
 });
+
+test("AI waits offer the keyboard-accessible sorting game", async ({
+  page,
+}) => {
+  let releaseRequest = () => {};
+  const requestGate = new Promise<void>((resolve) => {
+    releaseRequest = resolve;
+  });
+  await page.route("**/api/session", (route) =>
+    route.fulfill({
+      json: {
+        configured: true,
+        user: { id: "test-user", email: "student@example.test" },
+      },
+    }),
+  );
+  await page.route("**/api/scans", async (route) => {
+    await requestGate;
+    await route.fulfill({ json: { id: scanId } });
+  });
+  await page.goto("/scan");
+  const photo = await sharp({
+    create: { width: 20, height: 20, channels: 3, background: "yellow" },
+  })
+    .jpeg()
+    .toBuffer();
+  await page
+    .getByLabel("Choose a food photo")
+    .setInputFiles({ name: "food.jpg", mimeType: "image/jpeg", buffer: photo });
+  await expect(
+    page.getByRole("heading", { name: "Looking over your photo…" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Compost" }).click();
+  await expect(page.getByLabel("Score 1")).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter((violation) =>
+      ["serious", "critical"].includes(violation.impact || ""),
+    ),
+  ).toEqual([]);
+  releaseRequest();
+});
+
+test("a missing account moves sign-in to account creation", async ({
+  page,
+}) => {
+  await page.route("**/api/auth", (route) =>
+    route.fulfill({
+      status: 404,
+      json: {
+        code: "account_not_found",
+        error: "There isn't an account for that email yet.",
+      },
+    }),
+  );
+  await page.goto("/sign-in");
+  await page.getByLabel("Email address").fill("new@example.test");
+  await page.getByLabel("Password").fill("a secure password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make your account" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("No account was found for that email. Create one here."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Create account" }),
+  ).toBeVisible();
+});
+
+test("forgot password confirms a recovery request", async ({ page }) => {
+  await page.route("**/api/auth/recovery", (route) =>
+    route.fulfill({ json: { ok: true } }),
+  );
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email address").fill("student@example.test");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(
+    page.getByText("Check your email for a reset link.", { exact: false }),
+  ).toBeVisible();
+});
 test("sample is labelled, responsive, keyboard accessible and has no serious accessibility violations", async ({
   page,
 }, testInfo) => {

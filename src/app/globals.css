@@ -365,14 +365,27 @@ p {
   position: relative;
   min-height: 570px;
   overflow: hidden;
-  background: var(--lemon);
+  background: var(--forest);
   border-radius: 24px 24px 140px 24px;
-  color: var(--forest);
+  color: var(--white);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+.hero-food-photo {
+  object-fit: cover;
+}
+.hero-photo-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgb(16 42 36 / 0.72) 0%, transparent 35%),
+    linear-gradient(0deg, rgb(16 42 36 / 0.86) 0%, transparent 48%);
+}
 .art-heading {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -386,17 +399,13 @@ p {
   font-size: 30px;
   line-height: 1;
 }
-.plate-illustration {
-  width: 100%;
-  display: block;
-  margin: -6px 0;
-}
 .plate-sticker {
   position: absolute;
   top: 30%;
   right: 14px;
-  background: var(--jade);
-  color: var(--lemon);
+  z-index: 2;
+  background: var(--lemon);
+  color: var(--forest);
   width: 125px;
   height: 125px;
   display: grid;
@@ -409,20 +418,25 @@ p {
   font-weight: 700;
   line-height: 1.1;
 }
-.illustration-label {
+.photo-credit {
   position: absolute;
-  bottom: 95px;
+  z-index: 2;
+  bottom: 104px;
   left: 30px;
   font-family: var(--utility);
   font-size: 10px;
   letter-spacing: 0.08em;
+  color: var(--white);
+  text-underline-offset: 3px;
 }
 .scan-steps {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 24px;
   margin: 0 48px 28px 30px;
   padding-top: 18px;
-  border-top: 1px solid #7a8c33;
+  border-top: 1px solid rgb(255 255 255 / 0.62);
   font-family: var(--display);
   font-weight: 700;
   font-size: 17px;
@@ -614,6 +628,37 @@ p {
 .auth-mode-toggle {
   min-height: 44px;
   margin: 4px auto 0;
+}
+.auth-recovery-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--forest);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 58px;
+}
+.password-field button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--forest);
+}
+.password-field button:hover {
+  background: var(--nile);
 }
 .privacy-line {
   color: var(--muted);
@@ -1040,24 +1085,139 @@ p {
 .question-form .button {
   min-width: 55px;
 }
-.coach-loading {
-  margin: 40px 0;
-  background: white;
-  padding: 35px;
+.sort-game {
+  width: 100%;
   max-width: 920px;
-}
-.loading-rule {
-  height: 7px;
-  width: 60%;
+  margin: 24px 0;
+  padding: 18px;
+  overflow: hidden;
   background: var(--forest);
-  margin-bottom: 20px;
+  color: var(--white);
+  border: 2px solid var(--forest);
+  border-radius: 18px 18px 54px 18px;
+  box-shadow: 7px 7px 0 var(--lemon);
 }
-.coach-loading p {
-  font-weight: 700;
+.camera-actions .sort-game {
+  margin: 8px 0 4px;
+  box-shadow: 5px 5px 0 var(--sea);
+}
+.sort-game-topline {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.sort-game .mini-label {
+  color: var(--nile);
+  margin: 0 0 4px;
+}
+.sort-game h2 {
+  color: var(--white);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
   margin: 0;
+  letter-spacing: -0.035em;
 }
-.coach-loading span {
-  color: var(--muted);
+.sort-score {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: var(--lemon);
+  color: var(--forest);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.sort-stage {
+  position: relative;
+  height: 100px;
+  margin: 14px 0 10px;
+  overflow: hidden;
+  background: var(--jade);
+  border: 1px solid var(--sea);
+  border-radius: 10px 10px 30px 10px;
+}
+.sort-launcher {
+  position: absolute;
+  left: 12px;
+  bottom: 15px;
+  width: 48px;
+  height: 40px;
+  border: 3px solid var(--lemon);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+}
+.sort-launcher span {
+  position: absolute;
+  right: -13px;
+  top: 8px;
+  width: 15px;
+  height: 19px;
+  background: var(--lemon);
+  border-radius: 0 12px 12px 0;
+}
+.sort-flight-path {
+  position: absolute;
+  left: 58px;
+  right: 32px;
+  top: 20px;
+  height: 54px;
+  border-top: 2px dashed rgb(255 255 255 / 0.38);
+  border-radius: 50%;
+  transform: rotate(-4deg);
+}
+.sort-piece {
+  position: absolute;
+  left: 61%;
+  top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--paper);
+  color: var(--forest);
+  border: 2px solid var(--lemon);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  animation: sorter-flight 0.72s cubic-bezier(0.2, 0.85, 0.35, 1) both;
+}
+.sort-bins {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sort-bins button {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--sea);
+  border-radius: 8px 8px 18px 8px;
+  background: var(--paper);
+  color: var(--forest);
+  font-weight: 800;
+}
+.sort-bins button:hover {
+  background: var(--lemon);
+  border-color: var(--lemon);
+}
+.sort-feedback {
+  min-height: 21px;
+  margin: 10px 0 0;
+  color: var(--nile);
+  font-size: 14px;
+}
+@keyframes sorter-flight {
+  0% {
+    transform: translate(-240px, 35px) rotate(-22deg) scale(0.72);
+  }
+  58% {
+    transform: translate(-55px, -14px) rotate(10deg) scale(1.04);
+  }
+  100% {
+    transform: translate(0, 0) rotate(-2deg) scale(1);
+  }
 }
 .empty-state {
   background: var(--nile);
@@ -1346,16 +1506,13 @@ p {
     width: 100%;
   }
   .camera-art {
-    min-height: 0;
+    min-height: 480px;
     width: 100%;
     border-radius: 20px 20px 100px 20px;
   }
   .art-heading {
     margin: 22px 22px 0;
     font-size: 9px;
-  }
-  .plate-illustration {
-    margin: -4px 0 -14px;
   }
   .plate-sticker {
     width: 97px;
@@ -1364,7 +1521,7 @@ p {
     right: 12px;
     top: 27%;
   }
-  .illustration-label {
+  .photo-credit {
     left: 22px;
     bottom: 82px;
     font-size: 9px;
@@ -1463,6 +1620,15 @@ p {
   .question-form > div {
     gap: 5px;
   }
+  .sort-bins button {
+    min-height: 64px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+  }
+  .sort-piece {
+    left: 50%;
+  }
 }
 .camera-actions > .muted {
   color: var(--jade);
@@ -1484,6 +1650,9 @@ p {
   }
   .button:hover:not(:disabled) {
     transform: none;
+  }
+  .sort-piece {
+    animation: none;
   }
 }
 .camera-fineprint,

@@ -6,7 +6,7 @@ import {
   requireSameOrigin,
   run,
 } from "@/lib/server/http";
-import { userClient } from "@/lib/server/supabase";
+import { adminClient, userClient } from "@/lib/server/supabase";
 import { limit } from "@/lib/server/rate-limit";
 
 const credentialsSchema = z
@@ -16,6 +16,30 @@ const credentialsSchema = z
     mode: z.enum(["sign-in", "sign-up"]),
   })
   .strict();
+
+async function accountExists(email: string) {
+  const admin = adminClient();
+  for (let page = 1; page <= 100; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error)
+      throw new ApiError(
+        503,
+        "auth_lookup_failed",
+        "We couldn't check that account. Try again.",
+      );
+    if (
+      data.users.some(
+        (user) => user.email?.toLowerCase() === email.toLowerCase(),
+      )
+    )
+      return true;
+    if (data.users.length < 1000) return false;
+  }
+  return false;
+}
 
 export async function POST(request: Request) {
   return run(async () => {
@@ -51,12 +75,23 @@ export async function POST(request: Request) {
           "account_exists",
           "That email already has an account. Sign in instead.",
         );
+      if (parsed.data.mode === "sign-in") {
+        if (!(await accountExists(email)))
+          throw new ApiError(
+            404,
+            "account_not_found",
+            "There isn't an account for that email yet. Create one below.",
+          );
+        throw new ApiError(
+          401,
+          "auth_failed",
+          "That password doesn't match. Try again or reset it.",
+        );
+      }
       throw new ApiError(
-        parsed.data.mode === "sign-in" ? 401 : 400,
+        400,
         "auth_failed",
-        parsed.data.mode === "sign-in"
-          ? "That email and password don't match."
-          : "We couldn't create that account. Try another email or password.",
+        "We couldn't create that account. Try another email or password.",
       );
     }
     if (!result.data.session || !result.data.user)

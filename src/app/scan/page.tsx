@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, ImagePlus, LockKeyhole } from "lucide-react";
 import { api, session } from "@/lib/client";
 import { Notice } from "@/components/shell";
-import { PlateIllustration } from "@/components/brand";
 import { AiConsent } from "@/components/ai-consent";
+import { LoadingSortGame } from "@/components/loading-sort-game";
 
 const accepted = ["image/jpeg", "image/png", "image/webp"];
 export default function ScanPage() {
@@ -142,18 +143,33 @@ export default function ScanPage() {
         </p>
       </div>
       <div className="camera-panel">
-        <div className="camera-art" aria-hidden="true">
+        <div className="camera-art">
+          <Image
+            className="hero-food-photo"
+            src="https://images.unsplash.com/photo-1786892765152-39ddb2a762b9?auto=format&fit=crop&q=82&w=1400"
+            alt="Plates and glasses with food left after a shared meal"
+            fill
+            priority
+            sizes="(max-width: 760px) 100vw, 50vw"
+          />
+          <div className="hero-photo-shade" aria-hidden="true" />
           <div className="art-heading">
             <span>A FRESH LOOK AT LEFTOVERS</span>
             <span>↗</span>
           </div>
-          <PlateIllustration />
           <span className="plate-sticker">
             Small steps.
             <br />
             Good change.
           </span>
-          <span className="illustration-label">ILLUSTRATION</span>
+          <a
+            className="photo-credit"
+            href="https://unsplash.com/photos/leftover-food-on-dining-table-frKsP6iUSAM"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Photo: Teo Zac / Unsplash
+          </a>
           <div className="scan-steps">
             <span>
               <b>01</b> Snap
@@ -202,6 +218,7 @@ export default function ScanPage() {
                 <ImagePlus size={21} aria-hidden="true" />
                 Upload from device
               </button>
+              {busy && <LoadingSortGame title="Looking over your photo…" />}
             </>
           )}
           <input
