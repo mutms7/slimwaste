@@ -3,7 +3,7 @@
 UI calls same-origin JSON endpoints. Errors: `{error:string,code:string,requestId?:string}`. Supabase cookie auth.
 
 - GET /api/session: `{user:{id,email}|null,configured:boolean}`
-- POST /api/auth: `{email}` sends email OTP. POST /api/auth/verify: `{email,token}` verifies email OTP. DELETE /api/auth signs out.
+- POST /api/auth: `{email,password,mode}` creates or signs in a password account. `mode` is `sign-up` or `sign-in`. DELETE /api/auth signs out.
 - POST /api/scans: multipart `image` file (JPEG/PNG/WebP, max 4 MB), returns `{id}`.
 - GET /api/scans: `{scans:Scan[]}`. GET /api/scans/:id: `{scan:Scan,messages:Message[],advice:CoachReply|null}`.
 - PUT /api/scans/:id: correctionSchema JSON. Atomic replace and snapshot. Returns `{id}`.

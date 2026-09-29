@@ -2,14 +2,8 @@ project_id = "slimwaste"
 
 [auth]
 site_url = "https://slimwaste.vercel.app"
-additional_redirect_urls = ["https://slimwaste.vercel.app/auth/callback", "http://localhost:3000/auth/callback", "http://127.0.0.1:3000/auth/callback"]
 enable_signup = true
 
 [auth.email]
 enable_signup = true
-enable_confirmations = true
-otp_length = 8
-otp_expiry = 600
-
-# Optional code template: templates/sign-in.html.
-# Custom templates require a configured SMTP provider on the free plan.
+enable_confirmations = false

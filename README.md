@@ -1,6 +1,6 @@
 # SlimWaste
 
-Early-access status: Supabase and free-tier Gemini are connected and the live synthetic workflow passes. Public email delivery and the owner's email-link sign-in still need verification. See [launch status](docs/launch-status.md) before using this with real users.
+Early-access status: Supabase and free-tier Gemini are connected and the live synthetic workflow passes. Users create an email-and-password account once, then sign in with it. See [launch status](docs/launch-status.md) before using this with real users.
 
 SlimWaste helps students look at food they're throwing away, correct a rough image estimate, and find a practical next step. It supports shared kitchens, irregular shopping, meal plans, limited cooking access, and small budgets.
 
@@ -16,9 +16,7 @@ Run `npm test`, `npm run lint`, `npm run build`, and `npm run test:e2e`. Install
 
 Create a Supabase project, then apply `supabase/migrations/202609280001_initial.sql` through Supabase migrations (`supabase link --project-ref YOUR_REF`, then `supabase db push`) or the SQL editor. The migration creates all tables, policies, functions, and the private `scan-images` bucket. Never make the bucket public.
 
-Email sign-in uses Supabase's built-in magic links. The server requests a PKCE link with an `/auth/callback` redirect; the callback exchanges its code for session cookies. Open the link in the same browser that requested it. The deployed site and local callback URLs are configured in `supabase/config.toml`. The optional email-code path still works if a custom SMTP provider and the template in `supabase/templates/sign-in.html` are configured later.
-
-Supabase's built-in free mail service is restricted to project-team addresses and a small hourly quota. Public registration needs a custom SMTP provider. On this project, changing email templates without custom SMTP was rejected by Supabase. No paid plan was enabled.
+Accounts use an email and password with a 12-character minimum. Supabase confirmation emails are disabled for this early-access project, so account creation completes without the free mail service. Add a proper password-reset and verification flow when transactional email is configured.
 
 The server validates the signed-in user through Supabase. All private tables have row-level security. Browser credentials cannot write model output, coaching messages, correction snapshots, rate counters, or scan lifecycle fields directly. Corrections pass through a transaction that checks ownership, replaces reviewed items, stores a revision, and invalidates old advice. Server routes check ownership before using the service role.
 
@@ -87,7 +85,7 @@ The camera/upload sequence takes inspiration from [Hairrison](https://github.com
 
 ## Deploy
 
-Authenticate GitHub as `mutms7` and Vercel to the intended account. Create the public repository only after verifying that identity. Connect it to a Next.js Vercel project. Apply the Supabase migration and configure the email code template before enabling live accounts. Add environment values through Vercel, separately for preview and production, then deploy. `vercel.json` schedules retention at 04:00 UTC daily; Vercel sends `CRON_SECRET` as its bearer token.
+Authenticate GitHub as `mutms7` and Vercel to the intended account. Create the public repository only after verifying that identity. Connect it to a Next.js Vercel project. Apply the Supabase migration and configure password accounts before enabling live access. Add environment values through Vercel, separately for preview and production, then deploy. `vercel.json` schedules retention at 04:00 UTC daily; Vercel sends `CRON_SECRET` as its bearer token.
 
 Use an exact `NEXT_PUBLIC_APP_URL` for each environment. Before assigning `slimwaste.vercel.app`, test real sign-in, a real photo, correction persistence, advice, follow-up, history, and deletion with the configured services. Also confirm that a second account can't see the first account's private data. Account access, provider credentials, project quotas, and alias availability are external release requirements. Don't describe a preview with missing services as a verified production release.
 

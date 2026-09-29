@@ -98,7 +98,7 @@ test("camera, correction, coaching, follow-up and history with controlled API fi
     });
   });
   await page.goto("/scan");
-  const camera = page.getByRole("button", { name: "Take a photo" });
+  const camera = page.getByRole("button", { name: "Open camera" });
   await expect(camera).toBeVisible();
   const bounds = await camera.boundingBox();
   expect(bounds!.y + bounds!.height).toBeLessThan(
@@ -153,9 +153,7 @@ test("provider failure is visible and never becomes a sample analysis", async ({
     }),
   );
   await page.goto("/scan");
-  await expect(
-    page.getByRole("button", { name: "Take a photo" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open camera" })).toBeVisible();
   const photo = await sharp({
     create: { width: 10, height: 10, channels: 3, background: "green" },
   })
@@ -168,9 +166,7 @@ test("provider failure is visible and never becomes a sample analysis", async ({
     page.getByText("Photo analysis is busy. Please try again later."),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/scan$/);
-  await expect(
-    page.getByRole("button", { name: "Take a photo" }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Open camera" })).toBeEnabled();
 });
 test("sample is labelled, responsive, keyboard accessible and has no serious accessibility violations", async ({
   page,
@@ -239,7 +235,7 @@ test("free-tier processing requires agreement and keeps the camera accessible", 
     name: "I agree to this processing in this tab.",
   });
   await expect(agreement).not.toBeChecked();
-  const camera = page.getByRole("button", { name: "Take a photo" });
+  const camera = page.getByRole("button", { name: "Open camera" });
   const bounds = await camera.boundingBox();
   expect(bounds!.y + bounds!.height).toBeLessThan(
     page.viewportSize()!.height - 70,

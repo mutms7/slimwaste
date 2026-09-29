@@ -14,12 +14,12 @@ Gemini 3.5 Flash-Lite passed live image detection and coaching on the free tier.
 
 The owner explicitly chose free Gemini. AI_DATA_USE_ACK is gemini-free-tier. Users must agree before photos or coaching context are sent, and the server checks a versioned agreement bound to the signed-in account on both routes. Google may use free-tier content for model improvement and human review. No billing was enabled. The separate evaluation opt-in does not control Google's data use.
 
-Supabase rejected email template changes on its built-in free mail service. The app now supports its default PKCE sign-in links, with email codes as an optional path for a future custom SMTP setup. Site and callback URLs are configured. Built-in mail is restricted to project-team addresses and a small hourly quota.
+The app uses email-and-password accounts, so a user creates an account once and signs in without receiving a link every time. Email confirmation is disabled for the early-access project because the free Supabase mail service is restricted to project-team addresses. Add transactional email before introducing password recovery or email verification.
 
 Remaining checks before public launch:
 
-1. Have the owner request and open a real sign-in email in the same browser.
-2. Configure a custom SMTP provider before inviting users outside the Supabase project team.
+1. Create and sign in with a real password account on the hosted app.
+2. Add a transactional email provider before introducing password recovery or email verification.
 3. Try an actual food photo and camera permissions on iOS and Android.
 
 The explicit sample never creates a live scan. No private user photos or kitchen information were used in verification.

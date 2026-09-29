@@ -12,11 +12,13 @@ import { AiConsent } from "@/components/ai-consent";
 const accepted = ["image/jpeg", "image/png", "image/webp"];
 export default function ScanPage() {
   const router = useRouter();
-  const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     session()
@@ -24,6 +26,72 @@ export default function ScanPage() {
       .catch(() => {})
       .finally(() => setChecking(false));
   }, []);
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  }
+  useEffect(() => () => stopCamera(), []);
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !streamRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+    void videoRef.current.play();
+  }, [cameraOpen]);
+  async function openCamera() {
+    setError("");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        "Camera access isn't available in this browser. Upload a photo instead.",
+      );
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch {
+      setError(
+        "We couldn't open your camera. Check its browser permission and try again.",
+      );
+    }
+  }
+  function capturePhoto() {
+    const video = videoRef.current;
+    if (!video?.videoWidth || !video.videoHeight) {
+      setError("Your camera is still starting. Try capture again in a moment.");
+      return;
+    }
+    const longestSide = Math.max(video.videoWidth, video.videoHeight);
+    const scale = Math.min(1, 1600 / longestSide);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setError("We couldn't prepare that camera photo. Try again.");
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        stopCamera();
+        if (!blob) {
+          setError("We couldn't capture that photo. Try again.");
+          return;
+        }
+        void selected(
+          new File([blob], `slimwaste-camera-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+          }),
+        );
+      },
+      "image/jpeg",
+      0.86,
+    );
+  }
   async function selected(file?: File) {
     if (!file) return;
     setError("");
@@ -61,7 +129,7 @@ export default function ScanPage() {
     <div className="scan-page content-width">
       <div className="scan-copy">
         <div className="eyebrow">
-          <span className="eyebrow-seed" /> SMALL HABITS. LESS WASTE.
+          <span className="eyebrow-seed" /> Worth a second look
         </div>
         <h1>
           A little less
@@ -119,11 +187,11 @@ export default function ScanPage() {
               <button
                 className="button button-lemon button-large"
                 type="button"
-                onClick={() => cameraRef.current?.click()}
+                onClick={() => void openCamera()}
                 disabled={busy}
               >
                 <Camera size={21} aria-hidden="true" />
-                {busy ? "Reading your photo…" : "Take a photo"}
+                {busy ? "Reading your photo…" : "Open camera"}
               </button>
               <button
                 className="button button-outline button-large"
@@ -132,23 +200,10 @@ export default function ScanPage() {
                 disabled={busy}
               >
                 <ImagePlus size={21} aria-hidden="true" />
-                Choose a photo
+                Upload from device
               </button>
             </>
           )}
-          <input
-            className="visually-hidden"
-            ref={cameraRef}
-            tabIndex={-1}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            onChange={(e) => {
-              void selected(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-            aria-label="Take a food photo"
-          />
           <input
             className="visually-hidden"
             ref={fileRef}
@@ -172,6 +227,55 @@ export default function ScanPage() {
           </p>
         </div>
       </div>
+      {cameraOpen && (
+        <div
+          className="camera-dialog-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) stopCamera();
+          }}
+        >
+          <section
+            className="camera-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="camera-dialog-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") stopCamera();
+            }}
+          >
+            <div className="camera-dialog-heading">
+              <div>
+                <p className="mini-label">LIVE CAMERA</p>
+                <h2 id="camera-dialog-title">Frame what&apos;s left.</h2>
+              </div>
+              <button
+                className="plain-button"
+                type="button"
+                onClick={stopCamera}
+              >
+                Cancel
+              </button>
+            </div>
+            <video
+              ref={videoRef}
+              className="camera-preview"
+              autoPlay
+              muted
+              playsInline
+              aria-label="Live camera preview"
+            />
+            <button
+              className="button button-lemon button-large"
+              type="button"
+              onClick={capturePhoto}
+              autoFocus
+            >
+              <Camera size={21} aria-hidden="true" /> Capture photo
+            </button>
+          </section>
+        </div>
+      )}
       <div className="sample-strip">
         <div>
           <span className="mini-label">WANT TO LOOK AROUND?</span>
