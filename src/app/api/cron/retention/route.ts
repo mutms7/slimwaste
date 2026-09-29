@@ -18,7 +18,11 @@ export async function GET(request: Request) {
       const { error } = await admin
         .from("deletion_queue")
         .upsert(
-          { storage_path: image.storage_path, user_id: image.user_id },
+          {
+            storage_path: image.storage_path,
+            user_id: image.user_id,
+            next_attempt_at: now,
+          },
           { onConflict: "storage_path", ignoreDuplicates: true },
         );
       if (error) dbError(error, "retention_queue");
